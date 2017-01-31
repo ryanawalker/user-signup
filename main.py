@@ -55,17 +55,21 @@ class MainHandler(webapp2.RequestHandler):
     def get(self):
         user_error = self.request.get("userError")
         password_error = self.request.get("passwordError")
+        verify_error = self.request.get("verifyError")
         email_error = self.request.get("emailError")
         error_message = ["", "", "", ""]
         if user_error:
             error_message[0] = user_error
         if password_error:
             error_message[1] = password_error
-            error_message[2] = password_error
+        if verify_error:
+            error_message[2] = verify_error
         if email_error:
             error_message[3] = email_error
-        # error = self.request.get("error")
-        # error_message = error if error else ""
+
+        username_textfill = cgi.escape(self.request.get("username"))
+        email_textfill = cgi.escape(self.request.get("address"))
+
         form_body = '''
         <h1>Signup</h1>
         <form method="post">
@@ -75,8 +79,8 @@ class MainHandler(webapp2.RequestHandler):
                         Username
                     </td>
                     <td>
-                        <input type="text" name="username" value="">
-                        <span class="error">%s</span>
+                        <input type="text" name="username" value="''' + username_textfill + '''">
+                        <span class="error">{0}</span>
                     </td>
                 </tr>
                 <tr>
@@ -85,7 +89,7 @@ class MainHandler(webapp2.RequestHandler):
                     </td>
                     <td>
                         <input type="password" name="password" value="">
-                        <span class="error">%s</span>
+                        <span class="error">{1}</span>
                     </td>
                 </tr>
                 <tr>
@@ -94,7 +98,7 @@ class MainHandler(webapp2.RequestHandler):
                     </td>
                     <td>
                         <input type="password" name="verify" value="">
-                        <span class="error">%s</span>
+                        <span class="error">{2}</span>
                     </td>
                 </tr>
                 <tr>
@@ -102,14 +106,14 @@ class MainHandler(webapp2.RequestHandler):
                         Email (Optional)
                     </td>
                     <td>
-                        <input type="text" name="email" value="">
+                        <input type="text" name="email" value="'''.format(error_message[0], error_message[1], error_message[2])  + email_textfill + '''">
                         <span class="error">%s</span>
                     </td>
                 </tr>
             </table>
             <input type="submit">
         </form>
-        ''' % tuple(error_message)
+        ''' % error_message[3]
 
         content = header + form_body + footer
 
@@ -125,39 +129,38 @@ class MainHandler(webapp2.RequestHandler):
 
         # Check for valid username
         if not username or not valid_username(username):
-            error += "?userError=Please enter a valid username."
-            # self.redirect("/?error=" + error)
+            error += "&userError=Please enter a valid username."
         
         # Check for valid password
-        if (not password or not verify) or not valid_password(password) or password != verify:
-            if error == "":
-                error += "?passwordError=Please enter a valid password."
-            else:
-                error += "&passwordError=Please enter a valid password."
-            # self.redirect("/?error=" + error)
+        if not password or not valid_password(password):
+            error += "&passwordError=Please enter a valid password."
+        if not verify or password != verify:
+            error += "&verifyError=Your passwords did not match."
 
         # Check if email and if email is valid
         if email != "":
             if not valid_email(email):
-                if error == "":
-                    error += "?emailError=Please use a valid email."
-                else:
-                    error += "&emailError=Please use a valid email."
-                # self.redirect("/?error=" + error)
-            # else:
-            #     self.redirect("/welcome?username=" + username)    
+                error += "&emailError=Please use a valid email."
+        
+        if not username:
+            username = ""
+        username_message = "?username=" + username
+
+        if not email:
+            email = ""
+        email_message = "&address=" + email
 
         # Redirect if all looks good
         if error == "": 
-            self.redirect("/welcome?username=" + username)
+            self.redirect("/welcome" + username_message)
         else:
-            self.redirect("/" + error)
+            self.redirect("/" + username_message + email_message + error)
 
 class WelcomeHandler(webapp2.RequestHandler):        
     def get(self):
         username = self.request.get("username")
         username = cgi.escape(username, quote=True)
-        self.response.write("<h1>Welcome " + username + "</h1>")
+        self.response.write("<h1>Welcome, " + username + ".</h1>")
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
