@@ -67,7 +67,7 @@ class MainHandler(webapp2.RequestHandler):
         if email_error:
             error_message[3] = email_error
 
-        username_textfill = cgi.escape(self.request.get("username"))
+        username_textfill = cgi.escape(self.request.get("badName"))
         email_textfill = cgi.escape(self.request.get("address"))
 
         form_body = '''
@@ -144,16 +144,17 @@ class MainHandler(webapp2.RequestHandler):
         
         if not username:
             username = ""
-        username_message = "?username=" + username
 
         if not email:
             email = ""
-        email_message = "&address=" + email
 
         # Redirect if all looks good
         if error == "": 
+            username_message = "?username=" + username
             self.redirect("/welcome" + username_message)
         else:
+            username_message = "?badName=" + username
+            email_message = "&address=" + email
             self.redirect("/" + username_message + email_message + error)
 
 class WelcomeHandler(webapp2.RequestHandler):        
